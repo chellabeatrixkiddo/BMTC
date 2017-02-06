@@ -11,7 +11,7 @@ np.seterr(invalid='ignore')
         
 df = pd.read_excel("/Users/Admin/Documents/M.Tech/BMTC/data/all_distances_text.xlsx","Sheet1")
 
-label_names = ['150219795', '150220000', '150220187', '150220249']
+label_names = ['150219795', '150220000', '150220187', '150220249', '150218505', '150218641', '150218990', '150220082', '150220285', '150220937', '150221135', '150218093', '150813511', '150814233', '150814324']
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
@@ -19,7 +19,7 @@ xvalues = []
 yvalues = []
 zvalues = []
 
-for i in range(1, 5):
+for i in range(1, 16):
     xname = label_names[i-1] + '_LAT'
     yname = label_names[i-1] + '_LONG'
     zname = label_names[i-1] + '_TIME'
