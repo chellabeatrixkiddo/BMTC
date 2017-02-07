@@ -1,10 +1,10 @@
 library(readxl)
-bus1<-read_excel('bus.xlsx',col_names=TRUE)
+bus1<-read_excel('bus_red.xlsx',col_names=TRUE)
 library(plotly)
 
 
 
-p<-plot_ly(x=bus1$`150219795_LONG`,y=bus1$`150219795_LAT`,z=bus1$`150219795_TIME_SECS`,type="scatter3d",mode="line",marker=list(size = 2,
+pl<-plot_ly(x=bus1$`150219795_LONG`,y=bus1$`150219795_LAT`,z=bus1$`150219795_TIME_SECS`,type="scatter3d",mode="line",marker=list(size = 2,
   line = list(color = 'rgba(0, 255, 0, .8)',width = 1))) %>%
   add_trace(x=bus1$`150219795_LONG`,y =bus1$`150219795_LAT`,z=bus1$`150219795_TIME_SECS`, name = '150219795',mode = 'lines') %>%
   #add_trace(x=bus1$`150220000_LONG`,y =bus1$`150220000_LAT`,z=bus1$`150220000_TIME_SECS`, name = '150220000',mode = 'lines') %>%
@@ -22,5 +22,5 @@ p<-plot_ly(x=bus1$`150219795_LONG`,y=bus1$`150219795_LAT`,z=bus1$`150219795_TIME
   layout(scene = list(xaxis = list(title = 'Longitude'),
                      yaxis = list(title = 'Latitude'),
                       zaxis = list(title = 'Time')))
-print(p)
+print(pl)
 
