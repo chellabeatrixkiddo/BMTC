@@ -1,0 +1,121 @@
+#device id 1: 150219795
+#device id 2: 150220249
+#device id 3: 150813511
+#device id 4: 150814233
+
+#Import Libraries
+library(readxl)
+library(sp)
+library(geosphere)
+
+#Import Dataset from Excel
+bus1<-read_excel('bus_red.xlsx',col_names=TRUE)
+
+#Subset data frame one for each device id
+device1 = na.omit(subset(bus1, select = c('150219795_LAT', '150219795_LONG', '150219795_TIME_SECS')))
+device2 = na.omit(subset(bus1, select = c('150220249_LAT', '150220249_LONG', '150220249_TIME_SECS')))
+device3 = na.omit(subset(bus1, select = c('150813511_LAT', '150813511_LONG', '150813511_TIME_SECS')))
+device4 = na.omit(subset(bus1, select = c('150814233_LAT', '150814233_LONG', '150814233_TIME_SECS')))
+
+#For ever trip
+#Reset distance travelled after a trip
+#wipro gate origin 
+origin_lat <- 12.837745
+origin_long <- 77.658393
+
+#euc.dist <- function(x1, x2) sqrt(sum((x1 - x2) ^ 2)) #function declaration
+
+device_lat <- list(device1$`150219795_LAT`, device2$`150220249_LAT`, 
+                   device3$`150813511_LAT`, device4$`150814233_LAT`)
+device_long <- list(device1$`150219795_LONG`, device2$`150220249_LONG`,
+                    device3$`150813511_LONG`, device4$`150814233_LONG`)
+device_time <- list(device1$`150219795_TIME_SECS`, device2$`150220249_TIME_SECS`,
+                    device3$`150813511_TIME_SECS`, device4$`150814233_TIME_SECS`)
+# dist time table hard coded  for 4 devices
+#dist_time_table <- data.frame(time = integer(), d1 = double(), d2 = double(), 
+#                              d3 = double(), d4 = double())
+temp_dist_time <- NULL
+device_id <- 0
+for( k in device_lat){
+  device_id <- device_id + 1
+  
+  match_lat <- match(round(device_lat[[device_id]], 2), round(origin_lat, 2)) |
+    match(round(device_lat[[device_id]], 2), 12.85)
+  
+  match_long <- match(round(device_long[[device_id]], 2), round(origin_long, 2)) |
+    match(round(device_long[[device_id]], 2), 77.67)
+  
+  match_val <- match_lat & match_long
+
+  loop_cntr <- 0  
+  device_dist <- 0
+  device_time_euc <- 0 #elem wise copy of time required for plotting euclidean distance
+  
+  for(i in match_val){
+    loop_cntr <- loop_cntr + 1
+    
+    if(!is.na(i)) #start of new trip
+      device_dist <- c(device_dist, 0)
+    else{ 
+      #x <- (device_long[[device_id]][loop_cntr+1] - device_long[[device_id]][loop_cntr])
+      #y <- (device_lat[[device_id]][loop_cntr+1] - device_lat[[device_id]][loop_cntr])
+      
+      point1 <- c(device_long[[device_id]][loop_cntr+1], device_lat[[device_id]][loop_cntr+1])
+      point2 <- c(device_long[[device_id]][loop_cntr], device_lat[[device_id]][loop_cntr])
+      
+      device_dist <- c(device_dist, device_dist[loop_cntr] + distHaversine(point1, point2))
+    }
+    device_time_euc <- c(device_time_euc, device_time[[device_id]][loop_cntr])
+  }
+  
+  #device_dist_time <- data.frame(y = device_dist, x = device_time_euc)
+  #Plotting dist vs. time
+  plot(device_time_euc, device_dist, 
+       ylab = "Distance",xlab = "Time_secs", main = device_id)
+  
+  temp_dist_time <- c(temp_dist_time, list(device_time_euc, device_dist))
+}
+
+#time increments of 10 seconds
+yout <- NULL
+time_seq <- NULL
+for(l in seq(from = 30000, to = 55000, by = 10)){
+  temp_yout_vec <- NULL
+  time_seq <- c(time_seq, l)
+  for(dev_id in seq(1, 2*4, 2)){
+    df <- data.frame(x = temp_dist_time[[dev_id]], y = temp_dist_time[[dev_id+1]])
+    temp_yout_vec <- c(temp_yout_vec, data.frame( with(df, approx(x, y,
+                                                                  xout = l)))$y)
+  }
+  yout <- rbind(yout, temp_yout_vec)
+}
+
+dist_time_table <- data.frame(time_seq, yout[,1], yout[,2], yout[,3], yout[,4])
+write.csv(dist_time_table, "bunching_data.csv") 
+
+# determine the bunching points by comparing the difference between the distances of the buses
+list_of_non_zero_indices <- vector(mode="numeric", length=0)#list of indices where 2 or more buses bunch
+list_of_zero_indices <- vector(mode="numeric", length=0)
+
+n = 4 #no_of_devices
+n = n + 1 #no_of_columns in the data frame = no_of_devices + 1
+#together the two for loops take n(n-1)/2 steps where n is the no.of devices (O(n^2))
+#in this case the two loops together run 6 times [(4*3)/2] (4-devices)
+for(i in 2:(n-1)){
+  for(j in (i+1):n){
+    diff_vector <- abs(dist_time_table[i] - dist_time_table[j])
+    # if the difference between the 2 is less than 20 meters then bunching is assumed
+    indices_vector <- which(diff_vector <= 20)
+    indices_vector_zero <- which(diff_vector == 0)
+    
+    #update the global list of indices
+    list_of_non_zero_indices <- union(list_of_non_zero_indices, indices_vector)
+    list_of_zero_indices <- union(list_of_zero_indices, indices_vector_zero)
+  }
+}
+
+list_of_non_zero_indices <- sort(list_of_non_zero_indices)
+list_of_zero_indices <- sort(list_of_zero_indices)
+bunching_points <- setdiff(list_of_non_zero_indices, list_of_zero_indices)
+
+print(bunching_points)
