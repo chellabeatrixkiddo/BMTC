@@ -104,8 +104,8 @@ n = n + 1 #no_of_columns in the data frame = no_of_devices + 1
 for(i in 2:(n-1)){
   for(j in (i+1):n){
     diff_vector <- abs(dist_time_table[i] - dist_time_table[j])
-    # if the difference between the 2 is less than 5 meters then bunching is assumed
-    indices_vector <- which(diff_vector <= 5)
+    # if the difference between the 2 is less than 20 meters then bunching is assumed
+    indices_vector <- which(diff_vector <= 20)
     indices_vector_zero <- which(diff_vector == 0)
     
     #update the global list of indices
